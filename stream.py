@@ -116,12 +116,14 @@ class ASMRStreamer:
         youtube_url = f"{self.config['youtube']['rtmp_url']}/{self.config['youtube']['stream_key']}"
         
         # FFmpeg command for looping video and audio separately
-        # Simplified for YouTube compatibility
+        # Using large buffers for pre-encoding stability
         cmd = [
             'ffmpeg',
-            '-re',  # Read input at native frame rate
+            # Video input with loop
             '-stream_loop', '-1',  # Infinite loop for video
+            '-re',  # Read input at native frame rate
             '-i', self.config['video']['file'],
+            # Audio input with loop (independent)
             '-stream_loop', '-1',  # Infinite loop for audio
             '-i', self.config['audio']['file'],
             
@@ -145,7 +147,7 @@ class ASMRStreamer:
                 '-pix_fmt', 'yuv420p',
                 '-r', '30',  # 30 fps
                 '-g', '60',  # Keyframe every 2 seconds
-                '-sc_threshold', '0',  # Disable scene change detection
+                '-sc_threshold', '0',  # Disable scene change detection for consistent GOP
             ])
             
             # Add tune if specified (film, animation, etc)
@@ -168,22 +170,22 @@ class ASMRStreamer:
         if self.config['video']['codec'] == 'copy':
             cmd.extend([
                 '-bufsize', self.config['streaming']['buffer_size'],
-                '-bsf:v', 'dump_extra',  # Dump extra data for stream start
-        # Add buffer size for copy codec too
-        if self.config['video']['codec'] == 'copy':
-            cmd.extend([
-                '-bufsize', self.config['streaming']['buffer_size'],
-            ])c:a', self.config['audio']['codec'],
+            ])
+        
+        cmd.extend([
+            # Audio encoding settings
+            '-map', '1:a:0',  # Audio from second input
+            '-c:a', self.config['audio']['codec'],
             '-b:a', self.config['audio']['bitrate'],
             '-ar', '48000',  # 48kHz sample rate for high quality
             
-            # Streaming settings with buffering
             # Streaming settings
             '-f', 'flv',
             '-flvflags', 'no_duration_filesize',
             
             # Buffer settings for smooth streaming
             '-max_muxing_queue_size', '1024'
+            
             # Connection settings for stability
             '-reconnect', '1',
             '-reconnect_streamed', '1',
