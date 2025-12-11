@@ -119,13 +119,12 @@ class ASMRStreamer:
         # Using large buffers for pre-encoding stability
         cmd = [
             'ffmpeg',
-            # Input options for video
-            '-probesize', '50M',  # Large probe size for better analysis
-            '-analyzeduration', '30000000',  # Analyze 30 seconds (in microseconds)
+            # Video input with loop
             '-stream_loop', '-1',  # Infinite loop for video
+            '-re',  # Read input at native frame rate
             '-i', self.config['video']['file'],
-            # Input options for audio
-            '-stream_loop', '-1',  # Infinite loop for audio (independent)
+            # Audio input with loop (independent)
+            '-stream_loop', '-1',  # Infinite loop for audio
             '-i', self.config['audio']['file'],
             
             # Video encoding settings
@@ -228,12 +227,7 @@ class ASMRStreamer:
             )
             
             print(f"FFmpeg process started (PID: {self.process.pid})")
-            print("\n⏳ Pre-buffering 30 seconds of content before streaming...")
-            print("This ensures smooth playback without buffering issues.")
-            print("Streaming will start automatically after buffer is ready.\n")
-            
-            time.sleep(32)  # Wait for pre-buffer to fill
-            print("✅ Pre-buffer ready! Now streaming to YouTube...\n")
+            print("Streaming to YouTube...\n")
             
             # Monitor the stream
             while True:
