@@ -10,6 +10,7 @@ import time
 import logging
 import os
 import sys
+import threading
 from pathlib import Path
 from datetime import datetime
 
@@ -201,6 +202,28 @@ class ASMRStreamer:
         
         return cmd
     
+    def _read_ffmpeg_output(self):
+        """Read FFmpeg stderr output in real-time to prevent buffer blocking."""
+        if not self.process or not self.process.stderr:
+            return
+        
+        for line in iter(self.process.stderr.readline, ''):
+            if not line:
+                break
+            line = line.strip()
+            
+            # Show important messages
+            if any(keyword in line.lower() for keyword in ['error', 'warning', 'failed', 'invalid']):
+                print(f"[FFmpeg] {line}")
+            # Show progress/stats every few seconds
+            elif 'frame=' in line or 'speed=' in line:
+                # Only show occasional progress updates
+                if hasattr(self, '_last_progress_time'):
+                    if time.time() - self._last_progress_time < 5:
+                        continue
+                self._last_progress_time = time.time()
+                print(f"[Progress] {line}")
+    
     def start_stream(self):
         """Start the streaming process."""
         print("=" * 60)
@@ -223,19 +246,36 @@ class ASMRStreamer:
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                universal_newlines=True
+                universal_newlines=True,
+                bufsize=1  # Line buffered
             )
             
             print(f"FFmpeg process started (PID: {self.process.pid})")
-            print("Streaming to YouTube...\n")
+            print("Menyiapkan streaming...")
+            print("Menunggu koneksi ke YouTube RTMP...\n")
+            
+            # Start thread to read FFmpeg output
+            output_thread = threading.Thread(target=self._read_ffmpeg_output, daemon=True)
+            output_thread.start()
+            
+            # Wait a bit for initial connection
+            time.sleep(3)
+            
+            # Check if still running after initial connection
+            if self.process.poll() is not None:
+                print("\n❌ FFmpeg process terminated during startup!")
+                stderr = self.process.stderr.read()
+                if stderr:
+                    print(f"Error output:\n{stderr}")
+                return
+            
+            print("✅ Streaming dimulai! Data sedang dikirim ke YouTube...\n")
             
             # Monitor the stream
             while True:
                 # Check if process is still running
                 if self.process.poll() is not None:
-                    print("\nFFmpeg process terminated unexpectedly!")
-                    stderr = self.process.stderr.read()
-                    print(f"Error output:\n{stderr}")
+                    print("\n❌ FFmpeg process terminated unexpectedly!")
                     break
                 
                 # Log stats
