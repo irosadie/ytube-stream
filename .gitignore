@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Config
+config.json
+
+# Logs
+*.log
+logs/
+
+# Assets (large video/audio files)
+assets/*.mp4
+assets/*.mp3
+assets/*.wav
+assets/*.m4a
+
+# Keep directory structure
+!assets/.gitkeep

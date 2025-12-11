@@ -1,0 +1,28 @@
+{
+  "youtube": {
+    "rtmp_url": "rtmp://a.rtmp.youtube.com/live2",
+    "stream_key": "j88q-7r6a-822v-g66t-dauu"
+  },
+  "video": {
+    "file": "assets/video.mp4",
+    "resolution": "2560x1440",
+    "bitrate": "10M",
+    "preset": "slow",
+    "codec": "libx264"
+  },
+  "audio": {
+    "file": "assets/audio.wav",
+    "bitrate": "256k",
+    "codec": "aac"
+  },
+  "streaming": {
+    "buffer_size": "20M",
+    "reconnect_delay_seconds": 5,
+    "max_reconnect_attempts": 10
+  },
+  "monitoring": {
+    "enabled": true,
+    "log_interval_seconds": 30,
+    "log_file": "stream_monitor.log"
+  }
+}
