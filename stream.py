@@ -116,14 +116,12 @@ class ASMRStreamer:
         youtube_url = f"{self.config['youtube']['rtmp_url']}/{self.config['youtube']['stream_key']}"
         
         # FFmpeg command for looping video and audio separately
-        # Using large buffers for pre-encoding stability
+        # Simplified for YouTube compatibility
         cmd = [
             'ffmpeg',
-            # Video input with loop
-            '-stream_loop', '-1',  # Infinite loop for video
             '-re',  # Read input at native frame rate
+            '-stream_loop', '-1',  # Infinite loop for video
             '-i', self.config['video']['file'],
-            # Audio input with loop (independent)
             '-stream_loop', '-1',  # Infinite loop for audio
             '-i', self.config['audio']['file'],
             
@@ -144,15 +142,10 @@ class ASMRStreamer:
                 '-b:v', self.config['video']['bitrate'],
                 '-maxrate', maxrate,
                 '-bufsize', self.config['streaming']['buffer_size'],
-                '-s', self.config['video']['resolution'],
-                '-r', '30',  # 30 fps
-                '-g', '60',  # Keyframe every 2 seconds (fixed)
-                '-keyint_min', '30',  # Min keyframe interval 1 second
-                '-sc_threshold', '0',  # Disable scene change detection
-                '-force_key_frames', 'expr:gte(t,n_forced*2)',  # Force keyframe every 2 seconds
                 '-pix_fmt', 'yuv420p',
-                '-profile:v', 'high',  # H.264 High profile
-                '-level', '4.2',  # Level for 2K
+                '-r', '30',  # 30 fps
+                '-g', '60',  # Keyframe every 2 seconds
+                '-sc_threshold', '0',  # Disable scene change detection
             ])
             
             # Add tune if specified (film, animation, etc)
@@ -176,26 +169,21 @@ class ASMRStreamer:
             cmd.extend([
                 '-bufsize', self.config['streaming']['buffer_size'],
                 '-bsf:v', 'dump_extra',  # Dump extra data for stream start
-            ])
-        
-        cmd.extend([
-            # Audio encoding settings
-            '-map', '1:a:0',  # Audio from second input
-            '-c:a', self.config['audio']['codec'],
+        # Add buffer size for copy codec too
+        if self.config['video']['codec'] == 'copy':
+            cmd.extend([
+                '-bufsize', self.config['streaming']['buffer_size'],
+            ])c:a', self.config['audio']['codec'],
             '-b:a', self.config['audio']['bitrate'],
             '-ar', '48000',  # 48kHz sample rate for high quality
             
             # Streaming settings with buffering
+            # Streaming settings
             '-f', 'flv',
-            '-flvflags', 'no_duration_filesize+no_metadata',
+            '-flvflags', 'no_duration_filesize',
             
             # Buffer settings for smooth streaming
-            '-max_muxing_queue_size', '9999',  # Large muxing queue
-            '-fflags', '+genpts+flush_packets',  # Generate PTS and flush packets immediately
-            
-            # Low latency settings for faster stream start
-            '-flush_packets', '1',  # Flush packets immediately
-            
+            '-max_muxing_queue_size', '1024'
             # Connection settings for stability
             '-reconnect', '1',
             '-reconnect_streamed', '1',
