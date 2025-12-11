@@ -146,9 +146,10 @@ class ASMRStreamer:
                 '-bufsize', self.config['streaming']['buffer_size'],
                 '-s', self.config['video']['resolution'],
                 '-r', '30',  # 30 fps
-                '-g', str(gop_size),  # Keyframe interval
-                '-keyint_min', str(gop_size),  # Minimum keyframe interval
+                '-g', '60',  # Keyframe every 2 seconds (fixed)
+                '-keyint_min', '30',  # Min keyframe interval 1 second
                 '-sc_threshold', '0',  # Disable scene change detection
+                '-force_key_frames', 'expr:gte(t,n_forced*2)',  # Force keyframe every 2 seconds
                 '-pix_fmt', 'yuv420p',
                 '-profile:v', 'high',  # H.264 High profile
                 '-level', '4.2',  # Level for 2K
@@ -174,6 +175,7 @@ class ASMRStreamer:
         if self.config['video']['codec'] == 'copy':
             cmd.extend([
                 '-bufsize', self.config['streaming']['buffer_size'],
+                '-bsf:v', 'dump_extra',  # Dump extra data for stream start
             ])
         
         cmd.extend([
@@ -185,11 +187,14 @@ class ASMRStreamer:
             
             # Streaming settings with buffering
             '-f', 'flv',
-            '-flvflags', 'no_duration_filesize',
+            '-flvflags', 'no_duration_filesize+no_metadata',
             
             # Buffer settings for smooth streaming
             '-max_muxing_queue_size', '9999',  # Large muxing queue
-            '-fflags', '+genpts',  # Generate presentation timestamps
+            '-fflags', '+genpts+flush_packets',  # Generate PTS and flush packets immediately
+            
+            # Low latency settings for faster stream start
+            '-flush_packets', '1',  # Flush packets immediately
             
             # Connection settings for stability
             '-reconnect', '1',
