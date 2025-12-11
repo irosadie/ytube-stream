@@ -144,10 +144,14 @@ class ASMRStreamer:
                 '-b:v', self.config['video']['bitrate'],
                 '-maxrate', maxrate,
                 '-bufsize', self.config['streaming']['buffer_size'],
-                '-pix_fmt', 'yuv420p',
+                '-s', self.config['video']['resolution'],
                 '-r', '30',  # 30 fps
-                '-g', '60',  # Keyframe every 2 seconds
-                '-sc_threshold', '0',  # Disable scene change detection for consistent GOP
+                '-g', str(gop_size),  # Keyframe interval
+                '-keyint_min', str(gop_size),  # Minimum keyframe interval
+                '-sc_threshold', '0',  # Disable scene change detection
+                '-pix_fmt', 'yuv420p',
+                '-profile:v', 'high',  # H.264 High profile
+                '-level', '4.2',  # Level for 2K
             ])
             
             # Add tune if specified (film, animation, etc)
@@ -179,12 +183,13 @@ class ASMRStreamer:
             '-b:a', self.config['audio']['bitrate'],
             '-ar', '48000',  # 48kHz sample rate for high quality
             
-            # Streaming settings
+            # Streaming settings with buffering
             '-f', 'flv',
             '-flvflags', 'no_duration_filesize',
             
             # Buffer settings for smooth streaming
-            '-max_muxing_queue_size', '1024'
+            '-max_muxing_queue_size', '9999',  # Large muxing queue
+            '-fflags', '+genpts',  # Generate presentation timestamps
             
             # Connection settings for stability
             '-reconnect', '1',
