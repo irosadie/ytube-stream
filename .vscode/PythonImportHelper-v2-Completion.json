@@ -1,0 +1,188 @@
+[
+    {
+        "label": "subprocess",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "subprocess",
+        "description": "subprocess",
+        "detail": "subprocess",
+        "documentation": {}
+    },
+    {
+        "label": "time",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "time",
+        "description": "time",
+        "detail": "time",
+        "documentation": {}
+    },
+    {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "json",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "json",
+        "description": "json",
+        "detail": "json",
+        "documentation": {}
+    },
+    {
+        "label": "re",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "re",
+        "description": "re",
+        "detail": "re",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "logging",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "logging",
+        "description": "logging",
+        "detail": "logging",
+        "documentation": {}
+    },
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "threading",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "threading",
+        "description": "threading",
+        "detail": "threading",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "test_upload_to_youtube",
+        "kind": 2,
+        "importPath": "bandwidth_test",
+        "description": "bandwidth_test",
+        "peekOfCode": "def test_upload_to_youtube():\n    \"\"\"Test upload bandwidth ke YouTube RTMP server\"\"\"\n    print(\"🚀 Testing upload bandwidth to YouTube RTMP servers...\")\n    print(\"=\" * 60)\n    # Test ping stability\n    print(\"\\n1️⃣ Testing connection stability...\")\n    try:\n        result = subprocess.run(\n            ['ping', '-c', '20', '-i', '0.2', 'a.rtmp.youtube.com'],\n            capture_output=True,",
+        "detail": "bandwidth_test",
+        "documentation": {}
+    },
+    {
+        "label": "check_network_to_youtube",
+        "kind": 2,
+        "importPath": "debug_stream",
+        "description": "debug_stream",
+        "peekOfCode": "def check_network_to_youtube():\n    \"\"\"Check network latency and packet loss to YouTube\"\"\"\n    print(\"\\n🌐 Testing Network to YouTube...\")\n    print(\"=\" * 60)\n    try:\n        # Ping YouTube RTMP servers\n        result = subprocess.run(\n            ['ping', '-c', '10', 'a.rtmp.youtube.com'],\n            capture_output=True,\n            text=True,",
+        "detail": "debug_stream",
+        "documentation": {}
+    },
+    {
+        "label": "check_upload_bandwidth",
+        "kind": 2,
+        "importPath": "debug_stream",
+        "description": "debug_stream",
+        "peekOfCode": "def check_upload_bandwidth():\n    \"\"\"Estimate upload bandwidth requirement\"\"\"\n    print(\"\\n📊 Bandwidth Analysis...\")\n    print(\"=\" * 60)\n    # Load config\n    try:\n        with open('config.json', 'r') as f:\n            config = json.load(f)\n        video_bitrate = config['video']['bitrate']\n        audio_bitrate = config['audio']['bitrate']",
+        "detail": "debug_stream",
+        "documentation": {}
+    },
+    {
+        "label": "check_ffmpeg_process",
+        "kind": 2,
+        "importPath": "debug_stream",
+        "description": "debug_stream",
+        "peekOfCode": "def check_ffmpeg_process():\n    \"\"\"Check if FFmpeg is running and get stats\"\"\"\n    print(\"\\n🎬 FFmpeg Process Status...\")\n    print(\"=\" * 60)\n    try:\n        result = subprocess.run(\n            ['ps', 'aux'],\n            capture_output=True,\n            text=True\n        )",
+        "detail": "debug_stream",
+        "documentation": {}
+    },
+    {
+        "label": "check_video_source",
+        "kind": 2,
+        "importPath": "debug_stream",
+        "description": "debug_stream",
+        "peekOfCode": "def check_video_source():\n    \"\"\"Analyze video source quality\"\"\"\n    print(\"\\n🎥 Video Source Analysis...\")\n    print(\"=\" * 60)\n    try:\n        with open('config.json', 'r') as f:\n            config = json.load(f)\n        video_file = config['video']['file']\n        # Get video info\n        result = subprocess.run(",
+        "detail": "debug_stream",
+        "documentation": {}
+    },
+    {
+        "label": "get_recommendations",
+        "kind": 2,
+        "importPath": "debug_stream",
+        "description": "debug_stream",
+        "peekOfCode": "def get_recommendations():\n    \"\"\"Provide recommendations based on analysis\"\"\"\n    print(\"\\n💡 Recommendations...\")\n    print(\"=\" * 60)\n    try:\n        with open('config.json', 'r') as f:\n            config = json.load(f)\n        codec = config['video']['codec']\n        bitrate = float(config['video']['bitrate'].rstrip('Mk'))\n        preset = config['video'].get('preset', 'medium')",
+        "detail": "debug_stream",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "debug_stream",
+        "description": "debug_stream",
+        "peekOfCode": "def main():\n    \"\"\"Main debug function\"\"\"\n    print(\"\"\"\n    ╔════════════════════════════════════════════════════════╗\n    ║     YouTube ASMR Streaming Quality Debugger            ║\n    ║     Diagnose network and encoding issues               ║\n    ╚════════════════════════════════════════════════════════╝\n    \"\"\")\n    print(f\"🕐 Debug started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\\n\")\n    # Run all checks",
+        "detail": "debug_stream",
+        "documentation": {}
+    },
+    {
+        "label": "StreamMonitor",
+        "kind": 6,
+        "importPath": "stream",
+        "description": "stream",
+        "peekOfCode": "class StreamMonitor:\n    \"\"\"Monitor CPU and RAM usage during streaming.\"\"\"\n    def __init__(self, config):\n        self.enabled = config.get('monitoring', {}).get('enabled', False) and PSUTIL_AVAILABLE\n        self.log_interval = config.get('monitoring', {}).get('log_interval_seconds', 30)\n        self.log_file = config.get('monitoring', {}).get('log_file', 'stream_monitor.log')\n        self.last_log_time = 0\n        if self.enabled:\n            logging.basicConfig(\n                filename=self.log_file,",
+        "detail": "stream",
+        "documentation": {}
+    },
+    {
+        "label": "ASMRStreamer",
+        "kind": 6,
+        "importPath": "stream",
+        "description": "stream",
+        "peekOfCode": "class ASMRStreamer:\n    \"\"\"Main streaming class for YouTube ASMR streams.\"\"\"\n    def __init__(self, config_path='config.json'):\n        self.config_path = config_path\n        self.config = self.load_config()\n        self.monitor = StreamMonitor(self.config)\n        self.process = None\n        self.validate_config()\n    def load_config(self):\n        \"\"\"Load configuration from JSON file.\"\"\"",
+        "detail": "stream",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "stream",
+        "description": "stream",
+        "peekOfCode": "def main():\n    \"\"\"Main entry point.\"\"\"\n    print(\"\"\"\n    ╔════════════════════════════════════════════════════════╗\n    ║   Lightweight YouTube ASMR Streaming Application       ║\n    ║   Optimized for minimal CPU/RAM usage                  ║\n    ╚════════════════════════════════════════════════════════╝\n    \"\"\")\n    # Check if config file exists\n    config_file = 'config.json'",
+        "detail": "stream",
+        "documentation": {}
+    }
+]

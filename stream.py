@@ -112,9 +112,32 @@ class ASMRStreamer:
             print("Error: Please configure your YouTube stream key in config.json")
             sys.exit(1)
     
+    def get_audio_duration(self):
+        """Get audio file duration in seconds using ffprobe."""
+        try:
+            result = subprocess.run([
+                'ffprobe',
+                '-v', 'error',
+                '-show_entries', 'format=duration',
+                '-of', 'default=noprint_wrappers=1:nokey=1',
+                self.config['audio']['file']
+            ], capture_output=True, text=True, timeout=10)
+            
+            duration = float(result.stdout.strip())
+            print(f"Audio duration: {duration:.2f} seconds")
+            return duration
+        except Exception as e:
+            print(f"Warning: Could not detect audio duration: {e}")
+            print("Crossfade will be disabled.")
+            return None
+    
     def build_ffmpeg_command(self):
         """Build FFmpeg command for streaming with separate video/audio loops."""
         youtube_url = f"{self.config['youtube']['rtmp_url']}/{self.config['youtube']['stream_key']}"
+        
+        # Get audio duration for crossfade
+        audio_duration = self.get_audio_duration()
+        crossfade_duration = 8  # 8 seconds crossfade overlap
         
         # FFmpeg command for looping video and audio separately
         # Using large buffers for pre-encoding stability
@@ -124,7 +147,7 @@ class ASMRStreamer:
             '-stream_loop', '-1',  # Infinite loop for video
             '-re',  # Read input at native frame rate
             '-i', self.config['video']['file'],
-            # Audio input with loop (independent)
+            # Audio input with loop for crossfade (need 2 instances)
             '-stream_loop', '-1',  # Infinite loop for audio
             '-i', self.config['audio']['file'],
             
@@ -177,13 +200,33 @@ class ASMRStreamer:
                 '-bufsize', self.config['streaming']['buffer_size'],
             ])
         
-        cmd.extend([
-            # Audio encoding settings
-            '-map', '1:a:0',  # Audio from second input
-            '-c:a', self.config['audio']['codec'],
-            '-b:a', self.config['audio']['bitrate'],
-            '-ar', '48000',  # 48kHz sample rate for high quality
+        # Audio encoding settings with smooth crossfade loop (true overlap)
+        if audio_duration and audio_duration > crossfade_duration * 2:
+            # Audio is long enough for crossfade
+            # Use acrossfade filter for seamless loop with overlap
+            # d = duration of crossfade, c1/c2 = fade curves (tri = triangular)
+            audio_filter = f"acrossfade=d={crossfade_duration}:c1=tri:c2=tri"
             
+            cmd.extend([
+                '-filter_complex', f"[1:a]asplit=2[a1][a2];[a1][a2]{audio_filter}[aout]",
+                '-map', '[aout]',  # Use the crossfaded audio output
+                '-c:a', self.config['audio']['codec'],
+                '-b:a', self.config['audio']['bitrate'],
+                '-ar', '48000',  # 48kHz sample rate for high quality
+            ])
+            print(f"✅ Crossfade overlap enabled: {crossfade_duration}s seamless loop (audio bertumpuk)")
+        else:
+            # Audio too short or duration detection failed, skip crossfade
+            cmd.extend([
+                '-map', '1:a:0',  # Audio from second input
+                '-c:a', self.config['audio']['codec'],
+                '-b:a', self.config['audio']['bitrate'],
+                '-ar', '48000',  # 48kHz sample rate for high quality
+            ])
+            if audio_duration:
+                print(f"⚠️  Audio too short ({audio_duration}s) for {crossfade_duration}s crossfade, skipping")
+        
+        cmd.extend([
             # Streaming settings with buffering
             '-f', 'flv',
             '-flvflags', 'no_duration_filesize',
@@ -192,10 +235,14 @@ class ASMRStreamer:
             '-max_muxing_queue_size', '9999',  # Large muxing queue
             '-fflags', '+genpts',  # Generate presentation timestamps
             
-            # Connection settings for stability
+            # Connection settings for stability with aggressive reconnect
             '-reconnect', '1',
             '-reconnect_streamed', '1',
-            '-reconnect_delay_max', '5',
+            '-reconnect_delay_max', '2',  # Reduced delay for faster reconnect
+            '-reconnect_at_eof', '1',  # Reconnect at end of file
+            '-multiple_requests', '1',  # Allow multiple HTTP requests
+            '-timeout', '10000000',  # 10 seconds timeout in microseconds
+            '-rw_timeout', '10000000',  # Read/write timeout
             
             youtube_url
         ])
