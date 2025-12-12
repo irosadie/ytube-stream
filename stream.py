@@ -332,12 +332,16 @@ class ASMRStreamer:
                 
                 # Display stats every 5 seconds
                 loop_count += 1
-                if loop_count % 5 == 0 and self.psutil_available:
-                    cpu_percent = psutil.cpu_percent(interval=0.5)
-                    memory = psutil.virtual_memory()
-                    cpu_status = "✅" if cpu_percent < 70 else "⚠️" if cpu_percent < 90 else "🔥"
-                    ram_status = "✅" if memory.percent < 70 else "⚠️" if memory.percent < 90 else "🔥"
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] {cpu_status} CPU: {cpu_percent:.1f}% | {ram_status} RAM: {memory.percent:.1f}% ({memory.used / 1024**3:.1f}GB/{memory.total / 1024**3:.1f}GB)")
+                if loop_count % 5 == 0:
+                    try:
+                        import psutil
+                        cpu_percent = psutil.cpu_percent(interval=0.5)
+                        memory = psutil.virtual_memory()
+                        cpu_status = "✅" if cpu_percent < 70 else "⚠️" if cpu_percent < 90 else "🔥"
+                        ram_status = "✅" if memory.percent < 70 else "⚠️" if memory.percent < 90 else "🔥"
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] {cpu_status} CPU: {cpu_percent:.1f}% | {ram_status} RAM: {memory.percent:.1f}% ({memory.used / 1024**3:.1f}GB/{memory.total / 1024**3:.1f}GB)")
+                    except ImportError:
+                        pass  # psutil not installed, skip monitoring display
                 
                 # Sleep to avoid busy waiting
                 time.sleep(1)
