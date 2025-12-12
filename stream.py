@@ -147,7 +147,10 @@ class ASMRStreamer:
             '-stream_loop', '-1',  # Infinite loop for video
             '-re',  # Read input at native frame rate
             '-i', self.config['video']['file'],
-            # Audio input with loop
+            # Audio input 1 with loop (untuk crossfade overlap)
+            '-stream_loop', '-1',
+            '-i', self.config['audio']['file'],
+            # Audio input 2 with loop (duplicate untuk overlap)
             '-stream_loop', '-1',
             '-i', self.config['audio']['file'],
             
@@ -201,17 +204,18 @@ class ASMRStreamer:
             ])
         
         # Audio encoding with smooth loop (fade in/out for seamless transition)
-        # Audio encoding with infinite looping + crossfade overlap (8 detik)
+        # Audio encoding with infinite looping + crossfade overlap (8 detik) - metode proven dari test
         if audio_duration and audio_duration > crossfade_duration * 2:
-            # Calculate fade start point
+            # Calculate fade start point dan delay
             fade_start = audio_duration - crossfade_duration
+            delay_ms = int(fade_start * 1000)
             
-            # Filter untuk infinite loop dengan crossfade: aloop + afade
-            # Pakai aloop untuk infinite looping, dengan fade out di akhir dan fade in di awal setiap loop
+            # Filter: sama seperti test_crossfade.py yang sudah proven work
+            # Audio 1 fade out, Audio 2 delayed + fade in, lalu mix
             audio_filter = (
-                f"[1:a]aloop=loop=-1:size={int(audio_duration * 48000)},"
-                f"afade=t=out:st={fade_start}:d={crossfade_duration}:curve=qsin,"
-                f"afade=t=in:st=0:d={crossfade_duration}:curve=qsin[aout]"
+                f"[1:a]afade=t=out:st={fade_start}:d={crossfade_duration}:curve=qsin[a1];"
+                f"[2:a]adelay={delay_ms}|{delay_ms},afade=t=in:st=0:d={crossfade_duration}:curve=qsin[a2];"
+                f"[a1][a2]amix=inputs=2:duration=first:dropout_transition=0[aout]"
             )
             
             cmd.extend([
@@ -316,6 +320,7 @@ class ASMRStreamer:
             print("✅ Streaming dimulai! Data sedang dikirim ke YouTube...\n")
             
             # Monitor the stream
+            loop_count = 0
             while True:
                 # Check if process is still running
                 if self.process.poll() is not None:
@@ -324,6 +329,15 @@ class ASMRStreamer:
                 
                 # Log stats
                 self.monitor.log_stats(self.process.pid)
+                
+                # Display stats every 5 seconds
+                loop_count += 1
+                if loop_count % 5 == 0 and self.psutil_available:
+                    cpu_percent = psutil.cpu_percent(interval=0.5)
+                    memory = psutil.virtual_memory()
+                    cpu_status = "✅" if cpu_percent < 70 else "⚠️" if cpu_percent < 90 else "🔥"
+                    ram_status = "✅" if memory.percent < 70 else "⚠️" if memory.percent < 90 else "🔥"
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] {cpu_status} CPU: {cpu_percent:.1f}% | {ram_status} RAM: {memory.percent:.1f}% ({memory.used / 1024**3:.1f}GB/{memory.total / 1024**3:.1f}GB)")
                 
                 # Sleep to avoid busy waiting
                 time.sleep(1)
