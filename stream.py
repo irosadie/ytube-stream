@@ -141,17 +141,13 @@ class ASMRStreamer:
         
         # FFmpeg command for looping video and audio separately
         # Using large buffers for pre-encoding stability
-        # For true overlap crossfade, we need 2 audio inputs
         cmd = [
             'ffmpeg',
             # Video input with loop
             '-stream_loop', '-1',  # Infinite loop for video
             '-re',  # Read input at native frame rate
             '-i', self.config['video']['file'],
-            # Audio input 1 with loop
-            '-stream_loop', '-1',
-            '-i', self.config['audio']['file'],
-            # Audio input 2 (same file) with loop for crossfade overlap
+            # Audio input with loop
             '-stream_loop', '-1',
             '-i', self.config['audio']['file'],
             
@@ -204,43 +200,38 @@ class ASMRStreamer:
                 '-bufsize', self.config['streaming']['buffer_size'],
             ])
         
-        # Audio encoding with TRUE OVERLAP crossfade (overlap di 8 detik transisi saja)
+        # Audio encoding with smooth loop (fade in/out for seamless transition)
+        # Audio encoding with infinite looping + crossfade overlap (8 detik)
         if audio_duration and audio_duration > crossfade_duration * 2:
-            # Audio cukup panjang untuk crossfade
-            # Audio 1: fade out di 8 detik terakhir
-            # Audio 2: delay sampai 8 detik sebelum audio 1 habis, fade in di 8 detik pertama
-            fade_out_start = audio_duration - crossfade_duration
-            delay_ms = int(fade_out_start * 1000)
+            # Calculate fade start point
+            fade_start = audio_duration - crossfade_duration
             
-            # Filter complex:
-            # [1:a] = audio 1 dengan fade out di akhir
-            # [2:a] = audio 2 dengan delay + fade in di awal
-            # Lalu di-mix dengan acrossfade untuk overlap smooth
+            # Filter untuk infinite loop dengan crossfade: aloop + afade
+            # Pakai aloop untuk infinite looping, dengan fade out di akhir dan fade in di awal setiap loop
             audio_filter = (
-                f"[1:a]afade=t=out:st={fade_out_start}:d={crossfade_duration}[a1];"
-                f"[2:a]adelay={delay_ms}|{delay_ms},afade=t=in:st=0:d={crossfade_duration}[a2];"
-                f"[a1][a2]amix=inputs=2:duration=longest:weights=1 1[aout]"
+                f"[1:a]aloop=loop=-1:size={int(audio_duration * 48000)},"
+                f"afade=t=out:st={fade_start}:d={crossfade_duration}:curve=qsin,"
+                f"afade=t=in:st=0:d={crossfade_duration}:curve=qsin[aout]"
             )
             
             cmd.extend([
                 '-filter_complex', audio_filter,
-                '-map', '[aout]',  # Use mixed crossfaded output
+                '-map', '[aout]',
                 '-c:a', self.config['audio']['codec'],
                 '-b:a', self.config['audio']['bitrate'],
-                '-ar', '48000',  # 48kHz sample rate for high quality
+                '-ar', '48000',
             ])
-            print(f"✅ Overlap Crossfade: 8 detik terakhir audio 1 (fade out) + 8 detik awal audio 2 (fade in) BERTUMPUK")
+            print(f"✅ Infinite loop dengan smooth crossfade: fade in {crossfade_duration}s di awal, fade out {crossfade_duration}s di akhir setiap loop")
         else:
-            # Audio terlalu pendek, pakai audio input pertama saja tanpa crossfade
+            # Audio terlalu pendek, skip crossfade
             cmd.extend([
-                '-map', '1:a:0',  # Audio dari input kedua
+                '-map', '1:a:0',
                 '-c:a', self.config['audio']['codec'],
                 '-b:a', self.config['audio']['bitrate'],
-                '-ar', '48000',  # 48kHz sample rate for high quality
+                '-ar', '48000',
             ])
             if audio_duration:
-                print(f"⚠️  Audio too short ({audio_duration}s) for {crossfade_duration}s crossfade, skipping")
-        
+                print(f"⚠️  Audio too short ({audio_duration}s) for {crossfade_duration}s crossfade")
         cmd.extend([
             # Streaming settings with buffering
             '-f', 'flv',
@@ -249,15 +240,6 @@ class ASMRStreamer:
             # Buffer settings for smooth streaming
             '-max_muxing_queue_size', '9999',  # Large muxing queue
             '-fflags', '+genpts',  # Generate presentation timestamps
-            
-            # Connection settings for stability with aggressive reconnect
-            '-reconnect', '1',
-            '-reconnect_streamed', '1',
-            '-reconnect_delay_max', '2',  # Reduced delay for faster reconnect
-            '-reconnect_at_eof', '1',  # Reconnect at end of file
-            '-multiple_requests', '1',  # Allow multiple HTTP requests
-            '-timeout', '10000000',  # 10 seconds timeout in microseconds
-            '-rw_timeout', '10000000',  # Read/write timeout
             
             youtube_url
         ])

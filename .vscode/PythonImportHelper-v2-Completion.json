@@ -184,5 +184,77 @@
         "peekOfCode": "def main():\n    \"\"\"Main entry point.\"\"\"\n    print(\"\"\"\n    ╔════════════════════════════════════════════════════════╗\n    ║   Lightweight YouTube ASMR Streaming Application       ║\n    ║   Optimized for minimal CPU/RAM usage                  ║\n    ╚════════════════════════════════════════════════════════╝\n    \"\"\")\n    # Check if config file exists\n    config_file = 'config.json'",
         "detail": "stream",
         "documentation": {}
+    },
+    {
+        "label": "audio_file",
+        "kind": 5,
+        "importPath": "test_crossfade",
+        "description": "test_crossfade",
+        "peekOfCode": "audio_file = config['audio']['file']\n# Get audio duration\nresult = subprocess.run([\n    'ffprobe',\n    '-v', 'error',\n    '-show_entries', 'format=duration',\n    '-of', 'default=noprint_wrappers=1:nokey=1',\n    audio_file\n], capture_output=True, text=True)\nduration = float(result.stdout.strip())",
+        "detail": "test_crossfade",
+        "documentation": {}
+    },
+    {
+        "label": "result",
+        "kind": 5,
+        "importPath": "test_crossfade",
+        "description": "test_crossfade",
+        "peekOfCode": "result = subprocess.run([\n    'ffprobe',\n    '-v', 'error',\n    '-show_entries', 'format=duration',\n    '-of', 'default=noprint_wrappers=1:nokey=1',\n    audio_file\n], capture_output=True, text=True)\nduration = float(result.stdout.strip())\ncrossfade_duration = 8  # 8 seconds\nprint(f\"Audio duration: {duration:.2f} seconds\")",
+        "detail": "test_crossfade",
+        "documentation": {}
+    },
+    {
+        "label": "duration",
+        "kind": 5,
+        "importPath": "test_crossfade",
+        "description": "test_crossfade",
+        "peekOfCode": "duration = float(result.stdout.strip())\ncrossfade_duration = 8  # 8 seconds\nprint(f\"Audio duration: {duration:.2f} seconds\")\nprint(f\"Crossfade: {crossfade_duration} seconds\")\nprint(f\"Creating 4x loop with crossfade overlap...\\n\")\n# Calculate parameters\nfade_start = duration - crossfade_duration\ndelay_ms = int(fade_start * 1000)\n# FFmpeg command: 4 loops dengan crossfade\ncmd = [",
+        "detail": "test_crossfade",
+        "documentation": {}
+    },
+    {
+        "label": "crossfade_duration",
+        "kind": 5,
+        "importPath": "test_crossfade",
+        "description": "test_crossfade",
+        "peekOfCode": "crossfade_duration = 8  # 8 seconds\nprint(f\"Audio duration: {duration:.2f} seconds\")\nprint(f\"Crossfade: {crossfade_duration} seconds\")\nprint(f\"Creating 4x loop with crossfade overlap...\\n\")\n# Calculate parameters\nfade_start = duration - crossfade_duration\ndelay_ms = int(fade_start * 1000)\n# FFmpeg command: 4 loops dengan crossfade\ncmd = [\n    'ffmpeg', '-y',",
+        "detail": "test_crossfade",
+        "documentation": {}
+    },
+    {
+        "label": "fade_start",
+        "kind": 5,
+        "importPath": "test_crossfade",
+        "description": "test_crossfade",
+        "peekOfCode": "fade_start = duration - crossfade_duration\ndelay_ms = int(fade_start * 1000)\n# FFmpeg command: 4 loops dengan crossfade\ncmd = [\n    'ffmpeg', '-y',\n    # Load audio 2x\n    '-stream_loop', '3',  # 4x loop = 3+1\n    '-i', audio_file,\n    '-stream_loop', '3',\n    '-i', audio_file,",
+        "detail": "test_crossfade",
+        "documentation": {}
+    },
+    {
+        "label": "delay_ms",
+        "kind": 5,
+        "importPath": "test_crossfade",
+        "description": "test_crossfade",
+        "peekOfCode": "delay_ms = int(fade_start * 1000)\n# FFmpeg command: 4 loops dengan crossfade\ncmd = [\n    'ffmpeg', '-y',\n    # Load audio 2x\n    '-stream_loop', '3',  # 4x loop = 3+1\n    '-i', audio_file,\n    '-stream_loop', '3',\n    '-i', audio_file,\n    # Filter: audio 1 fade out di akhir, audio 2 delayed + fade in, mix (quarter sine tanpa volume boost)",
+        "detail": "test_crossfade",
+        "documentation": {}
+    },
+    {
+        "label": "cmd",
+        "kind": 5,
+        "importPath": "test_crossfade",
+        "description": "test_crossfade",
+        "peekOfCode": "cmd = [\n    'ffmpeg', '-y',\n    # Load audio 2x\n    '-stream_loop', '3',  # 4x loop = 3+1\n    '-i', audio_file,\n    '-stream_loop', '3',\n    '-i', audio_file,\n    # Filter: audio 1 fade out di akhir, audio 2 delayed + fade in, mix (quarter sine tanpa volume boost)\n    '-filter_complex',\n    f'[0:a]afade=t=out:st={fade_start}:d={crossfade_duration}:curve=qsin[a1];'",
+        "detail": "test_crossfade",
+        "documentation": {}
+    },
+    {
+        "label": "result",
+        "kind": 5,
+        "importPath": "test_crossfade",
+        "description": "test_crossfade",
+        "peekOfCode": "result = subprocess.run(cmd, capture_output=True, text=True)\nif result.returncode == 0:\n    print(\"✅ Success! File created: test_crossfade_4x.wav\")\n    print(f\"\\nPlay dengan: ffplay test_crossfade_4x.wav\")\n    print(f\"atau: open test_crossfade_4x.wav\")\nelse:\n    print(\"❌ Error!\")\n    print(result.stderr)",
+        "detail": "test_crossfade",
+        "documentation": {}
     }
 ]
