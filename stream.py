@@ -141,14 +141,18 @@ class ASMRStreamer:
         
         # FFmpeg command for looping video and audio separately
         # Using large buffers for pre-encoding stability
+        # For true overlap crossfade, we need 2 audio inputs
         cmd = [
             'ffmpeg',
             # Video input with loop
             '-stream_loop', '-1',  # Infinite loop for video
             '-re',  # Read input at native frame rate
             '-i', self.config['video']['file'],
-            # Audio input with loop for crossfade (need 2 instances)
-            '-stream_loop', '-1',  # Infinite loop for audio
+            # Audio input 1 with loop
+            '-stream_loop', '-1',
+            '-i', self.config['audio']['file'],
+            # Audio input 2 (same file) with loop for crossfade overlap
+            '-stream_loop', '-1',
             '-i', self.config['audio']['file'],
             
             # Video encoding settings
@@ -200,25 +204,36 @@ class ASMRStreamer:
                 '-bufsize', self.config['streaming']['buffer_size'],
             ])
         
-        # Audio encoding settings with smooth crossfade loop (true overlap)
+        # Audio encoding with TRUE OVERLAP crossfade (overlap di 8 detik transisi saja)
         if audio_duration and audio_duration > crossfade_duration * 2:
-            # Audio is long enough for crossfade
-            # Use acrossfade filter for seamless loop with overlap
-            # d = duration of crossfade, c1/c2 = fade curves (tri = triangular)
-            audio_filter = f"acrossfade=d={crossfade_duration}:c1=tri:c2=tri"
+            # Audio cukup panjang untuk crossfade
+            # Audio 1: fade out di 8 detik terakhir
+            # Audio 2: delay sampai 8 detik sebelum audio 1 habis, fade in di 8 detik pertama
+            fade_out_start = audio_duration - crossfade_duration
+            delay_ms = int(fade_out_start * 1000)
+            
+            # Filter complex:
+            # [1:a] = audio 1 dengan fade out di akhir
+            # [2:a] = audio 2 dengan delay + fade in di awal
+            # Lalu di-mix dengan acrossfade untuk overlap smooth
+            audio_filter = (
+                f"[1:a]afade=t=out:st={fade_out_start}:d={crossfade_duration}[a1];"
+                f"[2:a]adelay={delay_ms}|{delay_ms},afade=t=in:st=0:d={crossfade_duration}[a2];"
+                f"[a1][a2]amix=inputs=2:duration=longest:weights=1 1[aout]"
+            )
             
             cmd.extend([
-                '-filter_complex', f"[1:a]asplit=2[a1][a2];[a1][a2]{audio_filter}[aout]",
-                '-map', '[aout]',  # Use the crossfaded audio output
+                '-filter_complex', audio_filter,
+                '-map', '[aout]',  # Use mixed crossfaded output
                 '-c:a', self.config['audio']['codec'],
                 '-b:a', self.config['audio']['bitrate'],
                 '-ar', '48000',  # 48kHz sample rate for high quality
             ])
-            print(f"✅ Crossfade overlap enabled: {crossfade_duration}s seamless loop (audio bertumpuk)")
+            print(f"✅ Overlap Crossfade: 8 detik terakhir audio 1 (fade out) + 8 detik awal audio 2 (fade in) BERTUMPUK")
         else:
-            # Audio too short or duration detection failed, skip crossfade
+            # Audio terlalu pendek, pakai audio input pertama saja tanpa crossfade
             cmd.extend([
-                '-map', '1:a:0',  # Audio from second input
+                '-map', '1:a:0',  # Audio dari input kedua
                 '-c:a', self.config['audio']['codec'],
                 '-b:a', self.config['audio']['bitrate'],
                 '-ar', '48000',  # 48kHz sample rate for high quality
